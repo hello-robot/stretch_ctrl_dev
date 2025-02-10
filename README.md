@@ -1,26 +1,40 @@
 
 # stretch_ctrl_dev
-Experiments in controls
+The general control organization is as follows
+
+![](./stepper_flow.png)
+
+Code can be found under ~/repos, including
+
+* https://github.com/hello-robot/stretch_ctrl_dev : Your sandbox for development
+* https://github.com/hello-robot/stretch_body_feetech: Forked copy of Stretch Body for development
+* https://github.com/hello-robot/stretch_samd51_fimware_sandbox: Forked copy of Stretch Firmware for development
+
+You can modify, edit, and branch all repos as needed. Please check-in your code periodically, but note that all repos are public to our community.
+
+## Documentation
+
+Your robot is a standard Stretch 3 minus the arm and head camera. As such,some of the documentation won't apply. 
+
+Take some time to [review the guide](https://docs.hello-robot.com/0.3/getting_started/hello_robot/) and become familiar with the robot.
+
+[This tutorial](https://docs.hello-robot.com/0.3/python/moving/) introduces commanding motion. However, this robot doesn't support the robot.py instance. It will only support lift.py
+
+There is [older documentation](https://docs.hello-robot.com/0.2/stretch-tutorials/stretch_body/) which goes into more detail on working with the low-level Stretch Body interfaces. Much of the Lift content will still apply (but may be out of date). The rest of the robot classes and functions can be igonored.
+
+
 
 ## Getting Started
 
 ### Unboxing and Powering Up
 
-Your robot is a standard Stretch 3 minus the arm and head camera. Unbox the robot as described in the getting started guide.
-
-Take some time to review the guide and become familiar with the robot.
-
-https://docs.hello-robot.com/0.3/getting_started/hello_robot/
-
-
+Unbox the robot as described in the getting started guide.
 
 Once unboxed, plug in the charger. Place the charger in Linear Supply mode. The robot can be left powered on and the charger attached during development. 
 
 Ensure the 5lb weight is attached to the Lift. The power on the robot.
 
 Now that the robot is powered up,  attach a monitor, keyboard, and mouse to the base of the robot. 
-
-
 
 ### Home and Jog
 
@@ -65,38 +79,6 @@ Input?
 
 
 # Explore the Control Framework
-
-### Git Repos
-
-Your Python code will live in the repo 
-
-https://github.com/hello-robot/stretch_ctrl_dev
-
-A local copy of Stretch Body on the branch `feature/controls_dev` is installed in `~/repos/stretch_body_feetech`
-
-```pip3 list | grep stretch_body
-hello-robot-stretch-body               0.7.27                               /home/hello-robot/repos/stretch_body_feetech/body
-```
-
-You can modify and push to this branch as needed as well.
-
-A local copy of Stretch Firmware is in `~/repos/stretch_samd51_fimware_sandbox`, with branch `feature/controls_dev` checked out. 
-
-You can modify, edit, and branch all repos as needed. Please check-in your code periodically, but note that all repos are public to our community.
-
-Generally you'll be developing Python scripts under `stretch_ctrl_dev` and writing firmware controllers under `stretch_samd51_firmware_sandbox`.
-
-
-
-### Writing Code
-
-This tutorial introduces commanding motion. However, this robot doesn't support the robot.py instance. It will only support lift.py
-
-https://docs.hello-robot.com/0.3/python/moving/
-
-There is older documentation which goes into more detail on working with the low-level Stretch Body interfaces. Much of the Lift content will still apply (but may be out of date). The rest of the robot classes and functions can be igonored.
-
-https://docs.hello-robot.com/0.2/stretch-tutorials/stretch_body/
 
 
 
@@ -218,28 +200,19 @@ At the firmware level, a guarded event is triggered here:
 
 https://github.com/hello-robot/stretch_firmware/blob/master/arduino/hello_stepper/HelloController.cpp#L1277
 
-### Advanced: The Trace Tool
+
+
+### Write Your Own Controller
+
+There is a `MODE_CTRL_DEV` controller created as a starting point to make your own controller. 
+
+The script `~/repos/stretch_ctrl_dev/demo_scripts/lift_test_ctrl_dev.py` shows a simple example . Grep for the `ctrl_dev` variables and code in the Python and firmware to see how gains are passed down to the firmware from Python, and results passed back up.
+
+### The Trace Tool
 
 The Trace tool allows for high rate data collection on the stepper microcontroller. This data can then be read back in Python, which can be useful for debugging controllers.
 
-Information is here: https://forum.hello-robot.com/t/using-the-robot-trace-tool-to-debug-stretch-body/629
+A simple use is shown in `~/repos/stretch_ctrl_dev/demo_scripts/lift_test_trace.py`. Because the full robot isn't present the plotting tools aren't working (but can with a bit of work):  More information is here: https://forum.hello-robot.com/t/using-the-robot-trace-tool-to-debug-stretch-body/629
 
 
 
-Note: The tool may not be working out of the box but we can fix it when there's a need for it.
-
-
-
-## Advanced: Write Your Own Controller
-
-Let's try writing your own controller. LMK when you're read for this. The general outline is:
-
-* Create your own class YourLift that inherits from Lift
-* Extend Lift with your own parameters. 
-  * Pipe these all the way down to HelloController
-* Add a new control mode to HelloController that can be addressed from YourLift
-* Pipe new status data up from the HelloController into YourLift. You'll need to extend the protocol.
-* Pipe new command data down to the HelloController
-* Implement a simple controller down at HelloController. 
-  * Try plotting control data from Python
-  * Try plotting control data with Trace
