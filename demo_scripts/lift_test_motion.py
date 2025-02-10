@@ -4,8 +4,8 @@ import stretch_body.lift as lift
 import time
 
 l=lift.Lift()
-l.params['i_feedforward']=1.2 #Amps
-stiffness=0.25#0-1
+l.params['i_feedforward']=1.2 #Amps, counterbalance payload
+stiffness=0.25#0-1, go from float mode to full stiffness
 
 if not l.startup(threaded=False):
     exit()

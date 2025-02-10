@@ -64,7 +64,29 @@ Input?
 
 
 
-# Learn the Control Framework
+# Explore the Control Framework
+
+### Git Repos
+
+Your Python code will live in the repo 
+
+https://github.com/hello-robot/stretch_ctrl_dev
+
+A local copy of Stretch Body on the branch `feature/controls_dev` is installed in `~/repos/stretch_body_feetech`
+
+```pip3 list | grep stretch_body
+hello-robot-stretch-body               0.7.27                               /home/hello-robot/repos/stretch_body_feetech/body
+```
+
+You can modify and push to this branch as needed as well.
+
+A local copy of Stretch Firmware is in `~/repos/stretch_samd51_fimware_sandbox`, with branch `feature/controls_dev` checked out. 
+
+You can modify, edit, and branch all repos as needed. Please check-in your code periodically, but note that all repos are public to our community.
+
+Generally you'll be developing Python scripts under `stretch_ctrl_dev` and writing firmware controllers under `stretch_samd51_firmware_sandbox`.
+
+
 
 ### Writing Code
 
@@ -146,9 +168,9 @@ Finally, you can check that the joint still moves under command:
 
 ### Lift Gravity Compensation and Params
 
-The lift will automatically go into float mode after power-on.  Explore how the gravity compensation is implement, where the parameters are being read from. Trace how they are making their way down to the firmware. 
+The lift will automatically go into float mode after power-on.  
 
-Try manually moving the 5lb weight up and down. It is being balanced by a feedforward current command. Explore how this value is being set and then used in the control loop. 
+Try manually moving the 5lb weight up and down. It is being balanced by a feedforward current command. Explore how this value is being set and then used in the control loop. There are two relevant parameters:
 
 ```
 hello-robot@stretch-se3-3043:~$ stretch_params.py | grep lift | grep feedforward
@@ -158,24 +180,66 @@ stretch_user_params.yaml                                               param.lif
 
 The default values can be edited in `~/stretch_user/stretch-se3-3043/stretch_user_params.yaml`
 
-The low level controller (`stepper.py`) is commanding 1.2A feedforward (`param.hello-motor-lift.gains.i_safety_feedforward`)to balance the mass on power up. 
+Explore how the gravity compensation is implemented, where the parameters are being read from. 
 
-When a instance of `lift.py` is created, the param `lift.gains.i_safety_feedforward` is being used instead. 
+The low level controller (`stepper.py`) is commanding 1.2A feedforward (`param.hello-motor-lift.gains.i_safety_feedforward`) to balance the mass on power up. 
 
-Note, the Stretch Body scripts can be found under `~/repos/stretch-body` 
+The YAML value is piped to the firmware in`HelloController.cpp` where the following line adds the feedforward current to the commanded current.
+
+`u=u*stiffness_target+current_to_effort(cmd.i_feedforward);`
+
+Try to trace the feedforward value from the user YAML all the way to the controller.
+
+NOTE: When a instance of `lift.py` is created (eg `stretch_lift_jog.py`), the param `lift.gains.i_safety_feedforward` is being used instead of the `stepper.py` value.
+
+### Guarded Contact
+
+During motion the commanded current `u` is monitored within the HelloController loop. When `u` exceeds a threshold, the controller switches into a safety mode. In the case of the lift, the motion stops, but can then resume upon the next motion command. The result is that the lift will stop during motion when grabbed or run into something, providing a coarse safety mechanism.
+
+Explore the parameters and code for guarded contact. See the homing procedure for the lift:
+
+https://github.com/hello-robot/stretch_body/blob/master/body/stretch_body/prismatic_joint.py#L664
+
+, where `wait_for_contact` is used. 
+
+The contact parameters are as shown. Values are -100 to 100, where 100 is full scale current. Try modifying the contact parameters during motion (both programatically and via YAML)
+
+```
+stretch_params.py | grep lift | grep contact_thresh
+stretch_body.robot_params.nominal_params                               param.lift.contact_models.effort_pct.contact_thresh_calibration_margin 10.0                          
+stretch_body.robot_params.nominal_params                               param.lift.contact_models.effort_pct.contact_thresh_max                [-100, 100]                   
+stretch_configuration_params.yaml                                      param.lift.contact_models.effort_pct.contact_thresh_default            [-19.668696534399892, 63.684764188878674]
+stretch_configuration_params.yaml                                      param.lift.contact_models.effort_pct.contact_thresh_homing             [-30.0, 80.0]                 
+hello-robot@stretch-se3-3043:~/repos/stretch_samd51_fimware_sandbox$ 
+
+```
+
+At the firmware level, a guarded event is triggered here:
+
+https://github.com/hello-robot/stretch_firmware/blob/master/arduino/hello_stepper/HelloController.cpp#L1277
+
+### Advanced: The Trace Tool
+
+The Trace tool allows for high rate data collection on the stepper microcontroller. This data can then be read back in Python, which can be useful for debugging controllers.
+
+Information is here: https://forum.hello-robot.com/t/using-the-robot-trace-tool-to-debug-stretch-body/629
 
 
 
-
-
-Guarded Contact
-
-## Tools
-
-### The Trace Tool
+Note: The tool may not be working out of the box but we can fix it when there's a need for it.
 
 
 
-# Updating Python Control
+## Advanced: Write Your Own Controller
 
-### Updating Firmware Control
+Let's try writing your own controller. LMK when you're read for this. The general outline is:
+
+* Create your own class YourLift that inherits from Lift
+* Extend Lift with your own parameters. 
+  * Pipe these all the way down to HelloController
+* Add a new control mode to HelloController that can be addressed from YourLift
+* Pipe new status data up from the HelloController into YourLift. You'll need to extend the protocol.
+* Pipe new command data down to the HelloController
+* Implement a simple controller down at HelloController. 
+  * Try plotting control data from Python
+  * Try plotting control data with Trace
