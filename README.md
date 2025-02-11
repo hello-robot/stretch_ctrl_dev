@@ -14,7 +14,7 @@ You can modify, edit, and branch all repos as needed. Please check-in your code 
 
 ## Documentation
 
-Your robot is a standard Stretch 3 minus the arm and head camera. As such,some of the documentation won't apply. 
+Your robot is a standard Stretch 3 minus the arm. As such,some of the documentation won't apply. 
 
 Take some time to [review the guide](https://docs.hello-robot.com/0.3/getting_started/hello_robot/) and become familiar with the robot.
 
